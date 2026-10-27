@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Schedule">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171b21" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='19' rx='4' fill='%230b6bcb'/%3E%3Crect x='5' y='9' width='14' height='3' rx='1' fill='%23fff'/%3E%3Crect x='5' y='14' width='9' height='3' rx='1' fill='%23fff'/%3E%3C/svg%3E">
+<title>Schedule</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f0f2f5; --border: #e2e5ea;
+    --text: #1b1f24; --muted: #5f6977; --faint: #98a1ad;
+    --accent: #0b6bcb; --accent-text: #ffffff; --accent-soft: #e7f0fb;
+    --me-bg: #fff5d6; --me-border: #e9bf3c; --me-tag: #7a5800;
+    --day: #c77c00; --evening: #7048d1; --overnight: #2c4f9e;
+    --danger: #b42318;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .07);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1115; --surface: #171b21; --surface-2: #1f242c; --border: #2b323c;
+      --text: #e7eaef; --muted: #a0a9b6; --faint: #6d7684;
+      --accent: #4d9bff; --accent-text: #08121f; --accent-soft: #15253a;
+      --me-bg: #3a2f0e; --me-border: #a8841c; --me-tag: #ffd76a;
+      --day: #f0a73a; --evening: #a68cff; --overnight: #8eabf0;
+      --danger: #ff8a7a;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+  }
+  [hidden] { display: none !important; }
+  button, input { font: inherit; color: inherit; }
+  button {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; cursor: pointer; min-height: 36px;
+  }
+  button:hover { background: var(--surface-2); }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  svg { flex: none; }
+
+  /* ---- lock screen ---- */
+  .lock { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+  .lock-card {
+    width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 24px; box-shadow: var(--shadow); display: grid; gap: 14px;
+  }
+  .lock-card svg { width: 32px; height: 32px; color: var(--accent); }
+  .lock-card h1 { margin: 0; font-size: 20px; }
+  .lock-card p { margin: 0; color: var(--muted); }
+  .lock-card input[type=password] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg); font-size: 16px;
+  }
+  .remember { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 14px; }
+  .lock-card button[type=submit] {
+    background: var(--accent); color: var(--accent-text); border: 0; font-weight: 600; min-height: 42px;
+  }
+  .lock-card .error { color: var(--danger); font-size: 14px; }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 24px; padding-top: max(10px, env(safe-area-inset-top));
+    display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; justify-content: space-between;
+  }
+  .brand h1 { margin: 0; font-size: 17px; font-weight: 650; }
+  .brand .sub { color: var(--muted); font-size: 12.5px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 14px; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .nav { display: inline-flex; gap: 6px; align-items: center; }
+  .nav .arrow { width: 36px; padding: 0; font-size: 18px; line-height: 1; }
+  .nav input[type=date] {
+    border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+    padding: 5px 8px; min-height: 36px;
+  }
+
+  /* ---- page ---- */
+  main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 32px; }
+  .heading-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  h2 { margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -.01em; }
+  .pill {
+    display: inline-block; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent);
+    padding: 2px 9px; border-radius: 99px; vertical-align: 3px; margin-left: 6px; letter-spacing: 0;
+  }
+  .mynext {
+    font-size: 14px; color: var(--text); text-decoration: none; background: var(--me-bg);
+    border: 1px solid var(--me-border); padding: 5px 12px; border-radius: 99px;
+  }
+  .mynext b { font-weight: 600; }
+  .banner {
+    background: var(--me-bg); border: 1px solid var(--me-border); border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 16px; font-size: 14px;
+  }
+  .empty-state {
+    background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;
+    padding: 32px 20px; text-align: center; color: var(--muted);
+  }
+
+  /* ---- day view ---- */
+  .bands { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .band {
+    display: grid; grid-row: span 3; grid-template-rows: subgrid; gap: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .band-day { --band: var(--day); }
+  .band-evening { --band: var(--evening); }
+  .band-overnight { --band: var(--overnight); }
+  .band-head {
+    display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+    border-top: 3px solid var(--band); border-bottom: 1px solid var(--border);
+  }
+  .band-head svg { width: 18px; height: 18px; color: var(--band); }
+  .band-head h3 { margin: 0; font-size: 16px; font-weight: 650; }
+  .band-head .hint { color: var(--muted); font-size: 12.5px; }
+  .count {
+    margin-left: auto; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums;
+    background: var(--surface-2); border-radius: 99px; padding: 1px 9px;
+  }
+  .role-block { padding: 12px 16px 14px; }
+  .role-block + .role-block { border-top: 1px dashed var(--border); }
+  .role-block h4 {
+    margin: 0 0 6px; font-size: 11.5px; font-weight: 650; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .role-block h4 span { color: var(--faint); margin-left: 4px; }
+  .role-block ul { list-style: none; margin: 0; padding: 0; }
+  .person {
+    display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+    padding: 6px 8px; margin: 0 -8px; border-radius: 8px;
+  }
+  .person .time {
+    min-width: 6.6em; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 8px; min-width: 0; }
+  .name { font-weight: 550; }
+  .skill, .w-skill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--muted); }
+  .skill { font-size: 12px; background: var(--surface-2); padding: 1px 8px 1px 6px; border-radius: 6px; }
+  .skill i, .w-skill i {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    box-shadow: 0 0 0 1px rgba(128, 128, 128, .45);
+  }
+  .person.me, .w-person.me { background: var(--me-bg); box-shadow: inset 0 0 0 1px var(--me-border); }
+  .tag {
+    font-style: normal; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px;
+    margin-left: 6px; background: var(--surface-2); color: var(--muted); vertical-align: 1px; white-space: nowrap;
+  }
+  .tag.you { background: var(--me-border); color: #2e2100; }
+  .none { color: var(--faint); font-size: 13.5px; margin: 2px 0 0; }
+
+  /* ---- week view ---- */
+  .week-wrap {
+    overflow-x: auto; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow); -webkit-overflow-scrolling: touch;
+  }
+  .week { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 940px; table-layout: fixed; }
+  .week th, .week td { padding: 8px; vertical-align: top; text-align: left; border-bottom: 1px solid var(--border); }
+  .week td, .week thead th + th { border-left: 1px solid var(--border); }
+  .week .corner { width: 108px; }
+  .week thead th { font-weight: 600; }
+  .week thead a { color: inherit; text-decoration: none; display: flex; gap: 6px; align-items: baseline; }
+  .week thead a span { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
+  .week thead a b { font-size: 18px; font-weight: 650; }
+  .week .is-today { background: var(--accent-soft); }
+  .week thead .is-today a b { color: var(--accent); }
+  .role-row th {
+    background: var(--surface-2); font-size: 11.5px; font-weight: 650; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--muted); padding: 6px 12px;
+  }
+  .band-label { font-size: 13px; font-weight: 600; color: var(--band); white-space: nowrap; background: var(--surface); }
+  .band-label svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; }
+  .week .corner, .band-label { position: sticky; left: 0; z-index: 1; }
+  .week .corner { background: var(--surface); }
+  .role-row th { position: sticky; left: 0; }
+  .w-person { padding: 3px 6px; margin: 0 -4px 3px; border-radius: 6px; line-height: 1.25; }
+  .w-person b { display: block; font-size: 13px; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .w-person small { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+  .w-skill { gap: 4px; }
+  .week td.off { color: var(--faint); background: var(--surface-2); }
+
+  footer { max-width: 1280px; margin: 0 auto; padding: 0 24px 32px; color: var(--faint); font-size: 12.5px; }
+  footer p { margin: 4px 0; }
+  .linkish { background: none; border: 0; padding: 0; min-height: 0; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: inherit; }
+  .linkish:hover { background: none; }
+
+  @media (max-width: 960px) {
+    .bands { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .topbar {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand seg" "nav nav";
+      gap: 8px 12px; padding-left: 16px; padding-right: 16px;
+    }
+    .brand { grid-area: brand; min-width: 0; }
+    .brand .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .controls { display: contents; }
+    .seg { grid-area: seg; }
+    .nav { grid-area: nav; }
+    .nav input[type=date] { flex: 1; min-width: 0; }
+    main { padding: 16px 16px 24px; }
+    footer { padding: 0 16px 24px; }
+    h2 { font-size: 19px; }
+    .band-head, .role-block { padding-left: 14px; padding-right: 14px; }
+    .week { min-width: 740px; }
+    .week .corner { width: 40px; }
+    .band-label { font-size: 0; padding: 8px 4px; text-align: center; }
+    .band-label svg { width: 18px; height: 18px; margin: 0; }
+  }
+  @media (max-width: 380px) {
+    .nav input[type=date] { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="lock" class="lock" hidden>
+  <form id="unlock-form" class="lock-card" autocomplete="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <h1>Schedule</h1>
+    <p>Enter your passphrase to unlock.</p>
+    <input type="text" name="username" value="schedule" autocomplete="username" hidden>
+    <input id="pass" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passphrase" required>
+    <label class="remember"><input type="checkbox" id="remember" checked> Remember on this device</label>
+    <button type="submit">Unlock</button>
+    <p id="lock-error" class="error" role="alert" hidden></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Schedule</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-view="day">Day</button>
+        <button type="button" data-view="week">Week</button>
+      </div>
+      <div class="nav">
+        <button type="button" class="arrow" id="prev" aria-label="Previous">&#8249;</button>
+        <button type="button" id="today">Today</button>
+        <button type="button" class="arrow" id="next" aria-label="Next">&#8250;</button>
+        <input type="date" id="picker" aria-label="Pick a date">
+      </div>
+    </div>
+  </header>
+  <main id="main">
+    <div id="stale" class="banner" hidden></div>
+    <div class="heading-row">
+      <h2 id="heading"></h2>
+      <a id="mynext" class="mynext" hidden></a>
+    </div>
+    <div id="view"></div>
+  </main>
+  <footer>
+    <p>Day, evening and overnight are grouped by start time. Overnight shifts are listed under the date they start.</p>
+    <p id="foot-extra"></p>
+  </footer>
+</div>
+
+<script>
+const DATA = null;
+const ENC = {"v": 1, "iter": 600000, "salt": "uh9j5ckdrppDu3lhSyhN7w==", "iv": "RqewOS4I+vZJaFl4", "ct": "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"};
+</script>
+<script>
+(async () => {
+  const $ = s => document.querySelector(s);
+  const store = {
+    get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+    del: k => { try { localStorage.removeItem(k); } catch {} },
+  };
+
+  // ---- unlocking (published copy only) ----
+  const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const keyName = ENC ? `ss-key:${ENC.salt}` : null;
+
+  async function decryptWith(rawKey) {
+    const key = await crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['decrypt']);
+    const packed = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(ENC.iv) }, key, fromB64(ENC.ct));
+    const stream = new Blob([packed]).stream().pipeThrough(new DecompressionStream('deflate'));
+    return JSON.parse(await new Response(stream).text());
+  }
+
+  async function deriveKey(passphrase) {
+    const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveBits']);
+    return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: fromB64(ENC.salt), iterations: ENC.iter }, material, 256);
+  }
+
+  function promptUnlock() {
+    return new Promise(resolve => {
+      $('#lock').hidden = false;
+      $('#pass').focus();
+      const form = $('#unlock-form'), button = form.querySelector('button[type=submit]'), error = $('#lock-error');
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        button.disabled = true; button.textContent = 'Unlocking…'; error.hidden = true;
+        try {
+          const raw = await deriveKey($('#pass').value.trim());
+          const data = await decryptWith(raw);
+          if ($('#remember').checked) store.set(keyName, toB64(raw));
+          $('#lock').hidden = true;
+          resolve(data);
+        } catch {
+          error.textContent = "That passphrase didn't work. Try again.";
+          error.hidden = false; button.disabled = false; button.textContent = 'Unlock';
+          $('#pass').select();
+        }
+      });
+    });
+  }
+
+  let data = DATA;
+  if (!data && ENC) {
+    if (!window.crypto || !crypto.subtle || !window.DecompressionStream) {
+      document.body.innerHTML = '<p style="padding:24px">This browser can\'t unlock the schedule. Try an up-to-date Safari or Chrome.</p>';
+      return;
+    }
+    const saved = store.get(keyName);
+    if (saved) {
+      try { data = await decryptWith(fromB64(saved)); } catch { store.del(keyName); }
+    }
+    if (!data) data = await promptUnlock();
+  }
+  if (!data) {
+    document.body.innerHTML = '<p style="padding:24px">No schedule data yet. Run smartsquare.py on your PC.</p>';
+    return;
+  }
+  start(data);
+
+  // ---- schedule app ----
+  function start(DATA) {
+    $('#app').hidden = false;
+
+    const ICONS = {
+      day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+      evening: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 18a5 5 0 0 0-10 0"/><path d="M12 9V2M4.2 10.2l1.4 1.4M1 18h2M21 18h2M18.4 11.6l1.4-1.4M23 22H1M16 5l-4 4-4-4"/></svg>',
+      overnight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+    };
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const D = {
+      parse: s => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); },
+      str: d => d.toISOString().slice(0, 10),
+      add: (s, n) => { const d = D.parse(s); d.setUTCDate(d.getUTCDate() + n); return D.str(d); },
+      weekStart: s => D.add(s, -D.parse(s).getUTCDay()),
+      today: () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; },
+    };
+    const fmt = opts => new Intl.DateTimeFormat('en-US', { ...opts, timeZone: 'UTC' });
+    const fLong = fmt({ weekday: 'long', month: 'long', day: 'numeric' });
+    const fShort = fmt({ weekday: 'short', month: 'short', day: 'numeric' });
+    const fWeekday = fmt({ weekday: 'short' });
+    const fMonthDay = fmt({ month: 'short', day: 'numeric' });
+    const fStamp = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+    const clock = hhmm => {
+      const [h, m] = hhmm.split(':').map(Number);
+      return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''}${h < 12 ? 'a' : 'p'}`;
+    };
+    const hours = s => `${clock(s.start)}–${clock(s.end)}`;
+    const shortName = n => { const p = n.split(' '); return p.length > 1 ? `${p[0]} ${p[p.length - 1][0]}.` : n; };
+
+    const byDate = new Map();
+    for (const s of DATA.shifts) {
+      if (!byDate.has(s.date)) byDate.set(s.date, []);
+      byDate.get(s.date).push(s);
+    }
+    for (const list of byDate.values()) {
+      list.sort((a, b) => a.order - b.order || b.priority - a.priority || a.name.localeCompare(b.name));
+    }
+    const inRange = d => d >= DATA.range.start && d <= DATA.range.end;
+    const today = D.today();
+
+    // header details
+    const generated = new Date(DATA.generatedAt);
+    $('#sub').textContent = `${DATA.unit} · Updated ${fStamp.format(generated)}`;
+    const ageHours = (Date.now() - generated) / 36e5;
+    if (ageHours > 36) {
+      const days = Math.floor(ageHours / 24);
+      $('#stale').textContent = `This schedule was last updated ${days} day${days === 1 ? '' : 's'} ago, so it may be out of date. Run the app on your PC to refresh it.`;
+      $('#stale').hidden = false;
+    }
+    $('#picker').min = DATA.range.start;
+    $('#picker').max = DATA.range.end;
+    $('#foot-extra').innerHTML = `Covers ${esc(fMonthDay.format(D.parse(DATA.range.start)))} – ${esc(fMonthDay.format(D.parse(DATA.range.end)))}.`
+      + (ENC ? ' <button type="button" class="linkish" id="forget">Lock and forget this device</button>' : '');
+    if (ENC) $('#forget').onclick = () => { store.del(keyName); location.reload(); };
+
+    const nextMine = DATA.shifts
+      .filter(s => s.isMe && s.date >= today)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order)[0];
+    if (nextMine) {
+      const link = $('#mynext');
+      link.href = `#day/${nextMine.date}`;
+      link.innerHTML = `Your next shift: <b>${esc(nextMine.date === today ? 'Today' : fShort.format(D.parse(nextMine.date)))}</b> · ${esc(hours(nextMine))} · ${esc(nextMine.skill)}`;
+      link.hidden = false;
+    }
+
+    // state
+    const state = { view: store.get('ss-view') === 'week' ? 'week' : 'day', date: today };
+    const readHash = () => {
+      const m = location.hash.match(/^#(day|week)\/(\d{4}-\d{2}-\d{2})$/);
+      if (m) { state.view = m[1]; state.date = m[2]; }
+    };
+    readHash();
+    window.addEventListener('hashchange', () => { readHash(); render(); });
+    const go = (view, date) => {
+      state.view = view; state.date = date;
+      history.replaceState(null, '', `#${view}/${date}`);
+      render();
+    };
+
+    function personRow(s) {
+      const tags = (s.isMe ? '<em class="tag you">You</em>' : '') + s.tags.map(t => `<em class="tag">${esc(t)}</em>`).join('');
+      return `<li class="person${s.isMe ? ' me' : ''}">
+        <span class="time">${esc(hours(s))}</span>
+        <span class="who"><span class="name">${esc(s.name)}${tags}</span>
+          <span class="skill" title="${esc(s.skillName)}"><i style="background:${esc(s.skillColor)}"></i>${esc(s.skill)}</span></span>
+      </li>`;
+    }
+
+    const notPosted = () => `<div class="empty-state">No schedule for this date.<br>The saved schedule covers
+      ${esc(fMonthDay.format(D.parse(DATA.range.start)))} – ${esc(fMonthDay.format(D.parse(DATA.range.end)))}.</div>`;
+
+    function renderDay() {
+      const d = state.date;
+      $('#heading').innerHTML = esc(fLong.format(D.parse(d))) + (d === today ? '<span class="pill">Today</span>' : '');
+      if (!inRange(d)) { $('#view').innerHTML = notPosted(); return; }
+      const list = byDate.get(d) || [];
+      $('#view').innerHTML = `<div class="bands">${DATA.bands.map(b => {
+        const inBand = list.filter(s => s.band === b.key);
+        return `<section class="band band-${b.key}">
+          <header class="band-head">${ICONS[b.key]}<h3>${esc(b.label)}</h3><span class="hint">${esc(b.hint)}</span><span class="count" title="People working">${inBand.length}</span></header>
+          ${DATA.roles.map(r => {
+            const people = inBand.filter(s => s.role === r.key);
+            return `<div class="role-block"><h4>${esc(r.label)}<span>${people.length}</span></h4>${
+              people.length ? `<ul>${people.map(personRow).join('')}</ul>` : '<p class="none">No one scheduled</p>'}</div>`;
+          }).join('')}
+        </section>`;
+      }).join('')}</div>`;
+    }
+
+    function renderWeek() {
+      const days = Array.from({ length: 7 }, (_, i) => D.add(D.weekStart(state.date), i));
+      $('#heading').textContent = `${fMonthDay.format(D.parse(days[0]))} – ${fMonthDay.format(D.parse(days[6]))}`;
+      const head = `<tr><th class="corner"></th>${days.map(d => `<th class="${d === today ? 'is-today' : ''}">
+        <a href="#day/${d}" title="Open this day"><span>${esc(fWeekday.format(D.parse(d)))}</span><b>${D.parse(d).getUTCDate()}</b></a></th>`).join('')}</tr>`;
+      const body = DATA.roles.map(r => `<tr class="role-row"><th colspan="8">${esc(r.label)}</th></tr>` +
+        DATA.bands.map(b => `<tr class="band-${b.key}"><th class="band-label" title="${esc(`${b.label} (${b.hint.toLowerCase()})`)}">${ICONS[b.key]}${esc(b.label)}</th>${days.map(d => {
+          if (!inRange(d)) return '<td class="off"></td>';
+          const people = (byDate.get(d) || []).filter(s => s.role === r.key && s.band === b.key);
+          const cells = people.map(s => `<div class="w-person${s.isMe ? ' me' : ''}" title="${esc(`${s.name} · ${hours(s)} · ${s.skillName}`)}">
+            <b>${esc(shortName(s.name))}</b>
+            <small>${esc(clock(s.start))}<span class="w-skill"><i style="background:${esc(s.skillColor)}"></i>${esc(s.skill)}</span></small></div>`).join('');
+          return `<td class="${d === today ? 'is-today' : ''}">${cells || '<span class="none">–</span>'}</td>`;
+        }).join('')}</tr>`).join('')).join('');
+      $('#view').innerHTML = `<div class="week-wrap"><table class="week"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    }
+
+    function render() {
+      store.set('ss-view', state.view);
+      document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+      $('#picker').value = state.date;
+      state.view === 'day' ? renderDay() : renderWeek();
+    }
+
+    const step = dir => go(state.view, D.add(state.date, dir * (state.view === 'day' ? 1 : 7)));
+    document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => go(b.dataset.view, state.date)));
+    $('#prev').onclick = () => step(-1);
+    $('#next').onclick = () => step(1);
+    $('#today').onclick = () => go(state.view, today);
+    $('#picker').onchange = e => { if (e.target.value) go(state.view, e.target.value); };
+    document.addEventListener('keydown', e => {
+      if (e.target.closest('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
+      else if (e.key === 't') go(state.view, today);
+      else if (e.key === 'd') go('day', state.date);
+      else if (e.key === 'w') go('week', state.date);
+    });
+
+    // swipe between days on phones (day view only; the week table scrolls sideways)
+    let touch = null;
+    $('#main').addEventListener('touchstart', e => { touch = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
+    $('#main').addEventListener('touchend', e => {
+      if (!touch || state.view !== 'day') return;
+      const dx = e.changedTouches[0].clientX - touch.x, dy = e.changedTouches[0].clientY - touch.y;
+      if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy)) step(dx < 0 ? 1 : -1);
+      touch = null;
+    }, { passive: true });
+
+    render();
+  }
+})();
+</script>
+</body>
+</html>
